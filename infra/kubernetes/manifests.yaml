@@ -1,0 +1,354 @@
+# Kubernetes Manifests for Fault-Tolerant Full-Stack Application
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fault-tolerant-app
+  labels:
+    app.kubernetes.io/name: fault-tolerant-app
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: fault-tolerant-app
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        args:
+        - redis-server
+        - --appendonly
+        - "yes"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+# Redis PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: fault-tolerant-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: fault-tolerant-app
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+# C++ Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpp-service
+  namespace: fault-tolerant-app
+  labels:
+    app: cpp-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cpp-service
+  template:
+    metadata:
+      labels:
+        app: cpp-service
+    spec:
+      containers:
+      - name: cpp-service
+        image: your-acr.azurecr.io/cpp-service:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# C++ Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cpp-service
+  namespace: fault-tolerant-app
+spec:
+  selector:
+    app: cpp-service
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# Function Simulator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: function-sim
+  namespace: fault-tolerant-app
+  labels:
+    app: function-sim
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: function-sim
+  template:
+    metadata:
+      labels:
+        app: function-sim
+    spec:
+      containers:
+      - name: function-sim
+        image: your-acr.azurecr.io/function-sim:latest
+        ports:
+        - containerPort: 7071
+        env:
+        - name: PORT
+          value: "7071"
+        - name: CPP_SERVICE_URL
+          value: "http://cpp-service:8080"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: MAX_RETRIES
+          value: "3"
+        - name: BASE_DELAY_MS
+          value: "100"
+        - name: NODE_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /function/health
+            port: 7071
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /function/health
+            port: 7071
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Function Simulator Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: function-sim
+  namespace: fault-tolerant-app
+spec:
+  selector:
+    app: function-sim
+  ports:
+  - port: 7071
+    targetPort: 7071
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: fault-tolerant-app
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: your-acr.azurecr.io/frontend:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: fault-tolerant-app
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fault-tolerant-app-ingress
+  namespace: fault-tolerant-app
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: fault-tolerant-app.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+      - path: /function
+        pathType: Prefix
+        backend:
+          service:
+            name: function-sim
+            port:
+              number: 7071
+---
+# HPA for C++ Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cpp-service-hpa
+  namespace: fault-tolerant-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cpp-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+# HPA for Function Simulator
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: function-sim-hpa
+  namespace: fault-tolerant-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: function-sim
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

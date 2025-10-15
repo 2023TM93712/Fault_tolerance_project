@@ -1,0 +1,89 @@
+# Dependencies and build artifacts
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production build
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# C++ build artifacts
+service_cpp/build/
+service_cpp/include/httplib.h
+service_cpp/include/nlohmann/
+*.o
+*.a
+*.so
+*.dylib
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Test results
+test-results/
+junit.xml
+
+# K6 load test results
+load-test-results.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+*.p12
+
+# Azure
+.azure/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Local database
+*.db
+*.sqlite
