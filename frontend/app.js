@@ -1,7 +1,7 @@
 // ----------- CONFIG ----------- //
 
-const AUTH_BASE = `http://auth-service:9001`;
-const GW_BASE = `http://gateway-service:9002`;
+const AUTH_BASE = 'https://auth-service.ambitiousbay-fada81c8.centralindia.azurecontainerapps.io';
+const GW_BASE   = 'https://gateway-service.ambitiousbay-fada81c8.centralindia.azurecontainerapps.io';
 
 // thresholds (you can tune)
 const TEMP_THRESHOLD = 30; // °C
