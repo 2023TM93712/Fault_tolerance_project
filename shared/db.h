@@ -12,7 +12,7 @@
 class Database
 {
 public:
-    explicit Database(const std::string& filename);
+    explicit Database(const std::string& filename, bool create_schema = false);
     ~Database();
 
     bool exec(const std::string& q);

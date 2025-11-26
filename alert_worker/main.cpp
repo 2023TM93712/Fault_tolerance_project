@@ -22,7 +22,7 @@ static std::string get_db_path() {
 int main() {
     Logger::instance().info("=== ALERT WORKER STARTED ===");
 
-    Database db(get_db_path().c_str());
+    Database db(get_db_path());
 
     while (true) {
         auto alerts = db.get_pending_alerts(100);

@@ -26,7 +26,7 @@ static std::string get_db_path() {
 int main() {
     Logger::instance().info("=== AUTH SERVICE STARTED ===");
 
-    Database db(get_db_path().c_str());
+    Database db(get_db_path(), true);
     httplib::Server svr;
 
     // ---------- CORS preflight ----------

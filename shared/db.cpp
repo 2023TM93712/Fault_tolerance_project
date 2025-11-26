@@ -4,7 +4,7 @@
 
 // =================== CORE ===================
 
-Database::Database(const std::string& filename)
+Database::Database(const std::string& filename, bool create_schema)
 {
     if (sqlite3_open(filename.c_str(), &db_) != SQLITE_OK)
     {
@@ -14,16 +14,18 @@ Database::Database(const std::string& filename)
     }
 
     // Better concurrency
-    exec("PRAGMA journal_mode=WAL;");
+    exec("PRAGMA journal_mode=DELETE;");
 
     // If DB is locked, wait up to 5s for it to become available.
     sqlite3_busy_timeout(db_, 5000);
 
-    // Create tables if they don't exist
-    init_schema();
+    if (create_schema) {
+        // Create tables if they don't exist
+        init_schema();
 
-    // Ensure default admin exists
-    seed_default_admin();
+        // Ensure default admin exists
+        seed_default_admin();
+    }
 }
 
 Database::~Database()

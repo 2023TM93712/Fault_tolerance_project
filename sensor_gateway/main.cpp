@@ -43,7 +43,7 @@ static std::string get_db_path() {
 int main()
 {
     Logger::instance().info("SENSOR GATEWAY STARTED");
-    Database db(get_db_path().c_str());
+    Database db(get_db_path());
 
     // SensorSimulator is instantiated without initial UUIDs now, it will update dynamically
     SensorSimulator sim(db);
