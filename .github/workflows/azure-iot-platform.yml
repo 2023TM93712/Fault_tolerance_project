@@ -66,7 +66,7 @@ jobs:
           # FRONTEND
           IMAGE_FRONTEND="${ACR_LOGIN_SERVER}/frontend:${GIT_SHA}"
           echo "Building FRONTEND image: $IMAGE_FRONTEND"
-          docker build -f Dockerfile -t "$IMAGE_FRONTEND" ./frontend
+          docker build -f frontend/Dockerfile -t "$IMAGE_FRONTEND" ./frontend
           docker push "$IMAGE_FRONTEND"
 
           # Export for next step
