@@ -1,6 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cstdlib>   // for std::getenv
+#include <string>
 
 #include "../shared/db.h"
 #include "../shared/log.h"
@@ -30,10 +32,18 @@ std::vector<std::string> load_all_sensor_uuids(Database& db) {
     return uuids;
 }
 
+static std::string get_db_path() {
+    if (const char* env = std::getenv("DB_PATH")) {
+        if (*env) return std::string(env);
+    }
+    // Fallback for local/dev if env not set
+    return ""/app/data/iot.db"";
+}
+
 int main()
 {
     Logger::instance().info("SENSOR GATEWAY STARTED");
-    Database db("iot.db");
+    Database db(get_db_path().c_str());
 
     // SensorSimulator is instantiated without initial UUIDs now, it will update dynamically
     SensorSimulator sim(db);
