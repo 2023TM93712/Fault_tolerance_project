@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdlib>   // for std::getenv
+#include <string>
 #include "../shared/db.h"
 #include "../shared/models.h"
 #include "../shared/log.h"
@@ -13,10 +15,18 @@ static void add_cors(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 }
 
+static std::string get_db_path() {
+    if (const char* env = std::getenv("DB_PATH")) {
+        if (*env) return std::string(env);
+    }
+    // Fallback for local/dev if env not set
+    return "/app/data/iot.db";
+}
+
 int main() {
     Logger::instance().info("=== AUTH SERVICE STARTED ===");
 
-    Database db("iot.db");
+    Database db(get_db_path().c_str());
     httplib::Server svr;
 
     // ---------- CORS preflight ----------

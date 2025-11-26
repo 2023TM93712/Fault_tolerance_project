@@ -1,5 +1,7 @@
 #include <iostream>
 #include <thread>
+#include <cstdlib>   // for std::getenv
+#include <string>
 #include "../shared/log.h"
 #include "../shared/models.h"
 #include "../shared/db.h"
@@ -9,10 +11,18 @@ using namespace std;
 
 static const int MAX_RETRY = 5;
 
+static std::string get_db_path() {
+    if (const char* env = std::getenv("DB_PATH")) {
+        if (*env) return std::string(env);
+    }
+    // Fallback for local/dev if env not set
+    return "/app/data/iot.db";
+}
+
 int main() {
     Logger::instance().info("=== ALERT WORKER STARTED ===");
 
-    Database db("iot.db");
+    Database db(get_db_path().c_str());
 
     while (true) {
         auto alerts = db.get_pending_alerts(100);
