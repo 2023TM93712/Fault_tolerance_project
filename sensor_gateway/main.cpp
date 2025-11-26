@@ -37,7 +37,7 @@ static std::string get_db_path() {
         if (*env) return std::string(env);
     }
     // Fallback for local/dev if env not set
-    return ""/app/data/iot.db"";
+    return "/app/data/iot.db";
 }
 
 int main()
