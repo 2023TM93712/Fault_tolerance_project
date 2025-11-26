@@ -1,96 +1,65 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  redis:
-    image: redis:7-alpine
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./auth_service/Dockerfile
+    container_name: auth_service
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+      - "9001:9001"
+    working_dir: /app/data
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      - db-data:/app/datax
     networks:
-      - app-network
+      - iot_net
 
-  cpp_service:
+  gateway:
     build:
-      context: ./service_cpp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./sensor_gateway/Dockerfile
+    container_name: sensor_gateway
     ports:
-      - "8080:8080"
-    environment:
-      - PORT=8080
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      - "9002:9002"
+    working_dir: /app/data
+    volumes:
+      - db-data:/app/data
     networks:
-      - app-network
-    restart: unless-stopped
+      - iot_net
+    depends_on:
+      - auth
 
-  function_sim:
+  worker:
     build:
-      context: ./function_node
-      dockerfile: Dockerfile
-    ports:
-      - "7071:7071"
-    environment:
-      - PORT=7071
-      - CPP_SERVICE_URL=http://cpp_service:8080
-      - REDIS_URL=redis://redis:6379
-      - MAX_RETRIES=3
-      - BASE_DELAY_MS=100
-      - NODE_ENV=production
-    depends_on:
-      cpp_service:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7071/function/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      context: .
+      dockerfile: ./alert_worker/Dockerfile
+    container_name: alert_worker
+    working_dir: /app/data
+    volumes:
+      - db-data:/app/data
     networks:
-      - app-network
-    restart: unless-stopped
+      - iot_net
+    depends_on:
+      - gateway
+      - auth
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    container_name: web_ui
     ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_FUNCTION_URL=http://localhost:7071
-    depends_on:
-      function_sim:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      - "8080:80"
     networks:
-      - app-network
-    restart: unless-stopped
+      - iot_net
+    depends_on:
+      - gateway
+      - auth
 
 networks:
-  app-network:
+  iot_net:
     driver: bridge
 
 volumes:
-  redis_data:
-    driver: local
+  db-data:

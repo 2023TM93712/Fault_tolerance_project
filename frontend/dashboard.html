@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Industrial IoT Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="dashboard">
+<div id="dashboard-root" class="page-shell">
+
+  <!-- Header -->
+  <header class="top-bar">
+    <div class="top-left">
+      <div class="brand-logo small">II</div>
+      <div>
+        <div class="top-title">Industrial IoT Dashboard</div>
+        <div class="top-subtitle">Live sensors · alerts · health</div>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="user-chip">
+        <span id="db-username"></span>
+        <span class="role-pill" id="db-role"></span>
+      </div>
+      <button class="btn ghost" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="mode-tabs">
+    <button id="tab-user-mode" class="tab active" onclick="switchMode('user')">
+      User view
+    </button>
+    <button id="tab-admin-mode" class="tab" onclick="switchMode('admin')">
+      Admin view
+    </button>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="grid-layout">
+
+    <!-- Left column – sensors & controls -->
+    <section class="panel" id="panel-sensors">
+      <div class="panel-header">
+        <h2>Sensors</h2>
+        <span id="sensor-summary" class="muted tiny"></span>
+      </div>
+
+      <div class="panel-toolbar">
+        <input id="sensorFilter" class="field-input sm" type="text"
+               placeholder="Filter by UUID..."
+               oninput="applySensorFilter()">
+        <input id="globalAdv" class="field-input sm" type="number"
+               min="1" value="5" title="Advertising interval (sec)">
+        <button class="btn sm" onclick="refreshSensors()">Refresh</button>
+      </div>
+
+      <div id="sensor-list" class="sensor-list">
+        <!-- sensor cards injected here -->
+      </div>
+    </section>
+
+    <!-- Right column – charts, alerts, logs -->
+    <section class="panel" id="panel-telemetry">
+      <div class="panel-header">
+        <h2>Telemetry & Alerts</h2>
+        <span id="active-sensor-label" class="muted tiny">No sensor selected</span>
+      </div>
+
+      <div class="charts-wrap">
+        <canvas id="chart-temp" height="300"></canvas>
+        <canvas id="chart-vib" height="300"></canvas>
+        <canvas id="chart-batt" height="300"></canvas>
+        <canvas id="chart-alert" height="300"></canvas>
+      </div>
+
+      <div class="panel-section">
+        <h3>Graph Options</h3>
+        <div class="form-group">
+          <label for="data-points-select">Number of Data Points:</label>
+          <select id="data-points-select" class="field-input sm" onchange="updateDataLimitAndRefreshCharts()">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-split">
+        <div class="subpanel">
+          <div class="sub-header">
+            <h3>Alerts</h3>
+            <button class="btn-xs ghost" onclick="refreshAlerts()">Reload</button>
+          </div>
+          <ul id="alert-list" class="list alerts-list"></ul>
+        </div>
+
+        <div class="subpanel">
+          <div class="sub-header">
+            <h3>Recent log hints</h3>
+          </div>
+          <ul id="log-list" class="list logs-list">
+            <li class="muted tiny">Backend logs are written in containers (auth_service.log, sensor_gateway.log, alert_worker.log).</li>
+            <li class="muted tiny">This panel is just a UI placeholder – hook your own /logs API if you like.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- charts from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

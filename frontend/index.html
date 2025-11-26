@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IoT-Fault Tolerance Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="gradient-bg"></div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container"></div>
+
+  <!-- TOP BAR (visible on dashboards) -->
+  <header id="topbar" class="topbar hidden">
+    <div class="brand">
+      <div class="brand-logo">AS</div>
+      <div class="brand-text">
+        <div class="brand-title">IoT-Fault Tolerance Console</div>
+        <div class="brand-subtitle">Live industrial sensor workspace</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div id="current-user-info" class="user-pill"></div>
+      <button id="btn-logout" class="btn btn-outline-small">Logout</button>
+    </div>
+  </header>
+
+  <!-- AUTH VIEW -->
+  <main id="auth-view" class="center-wrap">
+    <div class="card auth-card">
+      <div class="card-header">
+        <div class="brand">
+          <div class="brand-logo">AS</div>
+          <div>
+            <div class="brand-title">IoT-Fault Tolerance Console</div>
+            <div class="brand-subtitle">
+              Fault-tolerant sensor monitoring on Azure-ready stack
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button id="tab-login" class="tab active">Login</button>
+        <button id="tab-signup" class="tab">Sign up</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="form active">
+        <label class="field">
+          <span>Username</span>
+          <input id="login-username" type="text" placeholder="admin" required />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="login-password" type="password" placeholder="••••••••" required />
+        </label>
+
+        <button type="submit" class="btn btn-primary full-width">Login</button>
+
+        <div class="hint">
+          <span>First time here?</span>
+          <a href="#" id="link-open-signup">Create an account.</a>
+        </div>
+
+        <div class="hint tiny">
+          Default Admin:
+          <code>admin</code> / <code>admin123</code> (auto-created in DB)
+        </div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signup-form" class="form">
+        <label class="field">
+          <span>Username</span>
+          <input id="signup-username" type="text" placeholder="john.doe" required />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input id="signup-password" type="password" required />
+        </label>
+
+        <label class="field">
+          <span>How many sensors do you need?</span>
+          <div class="sensor-count-row">
+            <input id="sensor-count" type="range" min="1" max="32" value="5" />
+            <span id="sensor-count-value" class="badge-soft">5</span>
+          </div>
+          <div class="tiny hint">
+            We’ll pre-allocate UUIDs and attach them to your IOT_Fault workspace.
+          </div>
+        </label>
+
+        <button type="submit" class="btn btn-primary full-width">Create account</button>
+
+        <div class="hint">
+          <span>Already registered?</span>
+          <a href="#" id="link-open-login">Back to login.</a>
+        </div>
+      </form>
+
+      <div class="backend-info tiny">
+        Backend: auth_service:9001 · sensor_gateway:9002 · alert_worker
+      </div>
+    </div>
+  </main>
+
+  <!-- USER DASHBOARD -->
+  <main id="user-view" class="page hidden">
+    <div class="page-inner">
+      <div class="page-header">
+        <h1>IoT-Fault · My Workspace</h1>
+        <p>Your dedicated view of commissioned sensors and live signals.</p>
+      </div>
+
+      <div class="layout-2col">
+        <!-- LEFT: SENSORS & CONTROLS -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>My sensors</h2>
+            <button id="btn-refresh-sensors" class="btn btn-outline-small">
+              Refresh
+            </button>
+          </div>
+          <div id="sensor-list" class="sensor-list empty-state">
+            Loading sensors…
+          </div>
+        </section>
+
+        <!-- RIGHT: GRAPHS & LOGS -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Telemetry</h2>
+            <span id="selected-sensor-label" class="tag-muted">No sensor selected</span>
+          </div>
+
+          <div class="chart-grid">
+            <div class="chart-card">
+              <div class="chart-title">Temperature (°C)</div>
+              <canvas id="chart-temp" height="120"></canvas>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-title">Vibration</div>
+              <canvas id="chart-vib" height="120"></canvas>
+            </div>
+
+            <div class="chart-card">
+              <div class="chart-title">Battery (%)</div>
+              <canvas id="chart-batt" height="120"></canvas>
+            </div>
+          </div>
+
+          <div class="panel-header mt-24">
+            <h2>Activity log</h2>
+          </div>
+          <div id="user-log" class="log-panel"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- ADMIN CONSOLE -->
+  <main id="admin-view" class="page hidden">
+    <div class="page-inner">
+      <div class="page-header">
+        <h1>IoT-Fault · Admin Console</h1>
+        <p>Approve users, inspect sensors, and watch alerts across the plant.</p>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="admin-users">Users</button>
+        <button class="admin-tab" data-tab="admin-sensors">Sensors</button>
+        <button class="admin-tab" data-tab="admin-alerts">Alerts</button>
+        <button class="admin-tab" data-tab="admin-logs">Logs</button>
+      </div>
+
+      <!-- USERS TAB -->
+      <section id="admin-users" class="admin-tab-body active">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Users</h2>
+            <button id="btn-refresh-users" class="btn btn-outline-small">
+              Refresh
+            </button>
+          </div>
+
+          <table class="table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th style="width: 160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-body">
+              <tr>
+                <td colspan="4" class="text-center tiny">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SENSORS TAB -->
+      <section id="admin-sensors" class="admin-tab-body">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>All sensors</h2>
+            <button id="btn-admin-refresh-sensors" class="btn btn-outline-small">
+              Refresh
+            </button>
+          </div>
+          <div id="admin-sensor-list" class="sensor-list"></div>
+        </div>
+      </section>
+
+      <!-- ALERTS TAB -->
+      <section id="admin-alerts" class="admin-tab-body">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Alerts</h2>
+            <span class="tag-muted tiny">Alert stream from worker process.</span>
+          </div>
+          <div id="admin-alerts-panel" class="log-panel">
+            Waiting for alert feed…
+          </div>
+        </div>
+      </section>
+
+      <!-- LOGS TAB -->
+      <section id="admin-logs" class="admin-tab-body">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>System logs</h2>
+          </div>
+          <div id="admin-log" class="log-panel"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
