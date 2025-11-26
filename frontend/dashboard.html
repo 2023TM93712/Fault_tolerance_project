@@ -1,118 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Industrial IoT Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>InfraSense – Sensor Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body data-page="dashboard">
-<div id="dashboard-root" class="page-shell">
-
-  <!-- Header -->
-  <header class="top-bar">
-    <div class="top-left">
-      <div class="brand-logo small">II</div>
-      <div>
-        <div class="top-title">Industrial IoT Dashboard</div>
-        <div class="top-subtitle">Live sensors · alerts · health</div>
-      </div>
+<body class="body-dashboard">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="app-logo">InfraSense</div>
+      <div class="app-subtitle">Industrial Condition Monitoring</div>
     </div>
-    <div class="top-right">
-      <div class="user-chip">
-        <span id="db-username"></span>
-        <span class="role-pill" id="db-role"></span>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <span id="header-username">user</span>
+        <span id="header-role" class="pill pill-secondary">user</span>
       </div>
-      <button class="btn ghost" onclick="logout()">Logout</button>
+      <button id="btn-logout" class="btn btn-ghost">Logout</button>
     </div>
   </header>
 
-  <!-- Tab bar -->
-  <nav class="mode-tabs">
-    <button id="tab-user-mode" class="tab active" onclick="switchMode('user')">
-      User view
-    </button>
-    <button id="tab-admin-mode" class="tab" onclick="switchMode('admin')">
-      Admin view
-    </button>
-  </nav>
-
-  <!-- CONTENT -->
-  <main class="grid-layout">
-
-    <!-- Left column – sensors & controls -->
-    <section class="panel" id="panel-sensors">
+  <!-- Main layout -->
+  <main class="layout">
+    <!-- LEFT: Sensors + controls -->
+    <section class="panel panel-left">
       <div class="panel-header">
-        <h2>Sensors</h2>
-        <span id="sensor-summary" class="muted tiny"></span>
+        <div class="panel-title-row">
+          <h2>All Sensors</h2>
+          <div class="panel-header-right">
+            <button id="btn-refresh" class="btn btn-small">Refresh</button>
+          </div>
+        </div>
+        <div id="sensor-count" class="panel-subtitle">0 sensors</div>
       </div>
 
-      <div class="panel-toolbar">
-        <input id="sensorFilter" class="field-input sm" type="text"
-               placeholder="Filter by UUID..."
-               oninput="applySensorFilter()">
-        <input id="globalAdv" class="field-input sm" type="number"
-               min="1" value="5" title="Advertising interval (sec)">
-        <button class="btn sm" onclick="refreshSensors()">Refresh</button>
+      <div id="sensor-error" class="alert alert-error" style="display:none;">
+        Failed to load sensors. Check gateway service.
       </div>
 
       <div id="sensor-list" class="sensor-list">
-        <!-- sensor cards injected here -->
+        <!-- sensor cards will be injected here -->
+      </div>
+
+      <!-- Commands -->
+      <div class="panel panel-commands">
+        <div class="panel-header">
+          <h3>Sensor Control</h3>
+          <div id="selected-sensor-label" class="panel-subtitle">
+            No sensor selected
+          </div>
+        </div>
+        <div class="command-row">
+          <button id="btn-commission" class="btn btn-primary" disabled>
+            Commission
+          </button>
+          <button id="btn-decommission" class="btn btn-outline" disabled>
+            Decommission
+          </button>
+        </div>
+        <div class="command-row">
+          <button id="btn-recover" class="btn btn-outline" disabled>
+            Recover
+          </button>
+          <button id="btn-fault" class="btn btn-danger" disabled>
+            Inject Fault
+          </button>
+        </div>
+        <div class="command-row">
+          <button id="btn-test-alert" class="btn btn-outline" disabled>
+            Test Alert
+          </button>
+        </div>
+        <div id="command-status" class="command-status"></div>
       </div>
     </section>
 
-    <!-- Right column – charts, alerts, logs -->
-    <section class="panel" id="panel-telemetry">
+    <!-- RIGHT: Charts + summary -->
+    <section class="panel panel-right">
+      <!-- Summary strip -->
+      <div class="summary-strip">
+        <div class="summary-card">
+          <div class="summary-label">Active sensors</div>
+          <div id="summary-active" class="summary-value">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Faults</div>
+          <div id="summary-faults" class="summary-value summary-value-warn">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Latest temperature</div>
+          <div id="summary-temp" class="summary-value">-</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Latest battery</div>
+          <div id="summary-batt" class="summary-value">-</div>
+        </div>
+      </div>
+
+      <!-- Chart area (landscape) -->
       <div class="panel-header">
-        <h2>Telemetry & Alerts</h2>
-        <span id="active-sensor-label" class="muted tiny">No sensor selected</span>
-      </div>
-
-      <div class="charts-wrap">
-        <canvas id="chart-temp" height="300"></canvas>
-        <canvas id="chart-vib" height="300"></canvas>
-        <canvas id="chart-batt" height="300"></canvas>
-        <canvas id="chart-alert" height="300"></canvas>
-      </div>
-
-      <div class="panel-section">
-        <h3>Graph Options</h3>
-        <div class="form-group">
-          <label for="data-points-select">Number of Data Points:</label>
-          <select id="data-points-select" class="field-input sm" onchange="updateDataLimitAndRefreshCharts()">
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-          </select>
+        <div class="panel-title-row">
+          <h2>Sensor Telemetry</h2>
+        </div>
+        <div id="chart-sensor-label" class="panel-subtitle">
+          Select a sensor to view data
         </div>
       </div>
 
-      <div class="panel-split">
-        <div class="subpanel">
-          <div class="sub-header">
-            <h3>Alerts</h3>
-            <button class="btn-xs ghost" onclick="refreshAlerts()">Reload</button>
+      <div id="chart-info" class="chart-info">
+        <!-- dynamic text about commissioned / not commissioned -->
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title-row">
+            <span>Temperature (°C)</span>
           </div>
-          <ul id="alert-list" class="list alerts-list"></ul>
+          <div class="chart-body">
+            <canvas id="tempChart"></canvas>
+          </div>
         </div>
 
-        <div class="subpanel">
-          <div class="sub-header">
-            <h3>Recent log hints</h3>
+        <div class="chart-card">
+          <div class="chart-title-row">
+            <span>Vibration</span>
           </div>
-          <ul id="log-list" class="list logs-list">
-            <li class="muted tiny">Backend logs are written in containers (auth_service.log, sensor_gateway.log, alert_worker.log).</li>
-            <li class="muted tiny">This panel is just a UI placeholder – hook your own /logs API if you like.</li>
-          </ul>
+          <div class="chart-body">
+            <canvas id="vibChart"></canvas>
+          </div>
         </div>
+
+        <div class="chart-card">
+          <div class="chart-title-row">
+            <span>Battery (%)</span>
+          </div>
+          <div class="chart-body">
+            <canvas id="battChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-footer-note">
+        Data refreshes when you select a sensor or hit Refresh.
       </div>
     </section>
-
   </main>
-</div>
 
-<!-- charts from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

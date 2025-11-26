@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>IoT-Fault Tolerance Console</title>
+  <title>Industrial IoT Gateway Console</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,13 +12,13 @@
   <!-- Toast notifications -->
   <div id="toast-container"></div>
 
-  <!-- TOP BAR (visible on dashboards) -->
+  <!-- TOP BAR (dashboard only) -->
   <header id="topbar" class="topbar hidden">
     <div class="brand">
-      <div class="brand-logo">AS</div>
+      <div class="brand-logo">II</div>
       <div class="brand-text">
-        <div class="brand-title">IoT-Fault Tolerance Console</div>
-        <div class="brand-subtitle">Live industrial sensor workspace</div>
+        <div class="brand-title">Industrial IoT Gateway</div>
+        <div class="brand-subtitle">Fault-tolerant sensor monitoring console</div>
       </div>
     </div>
     <div class="topbar-right">
@@ -32,11 +32,11 @@
     <div class="card auth-card">
       <div class="card-header">
         <div class="brand">
-          <div class="brand-logo">AS</div>
+          <div class="brand-logo">II</div>
           <div>
-            <div class="brand-title">IoT-Fault Tolerance Console</div>
+            <div class="brand-title">Industrial IoT Gateway</div>
             <div class="brand-subtitle">
-              Fault-tolerant sensor monitoring on Azure-ready stack
+              Secure onboarding and monitoring for edge sensors.
             </div>
           </div>
         </div>
@@ -67,8 +67,8 @@
         </div>
 
         <div class="hint tiny">
-          Default Admin:
-          <code>admin</code> / <code>admin123</code> (auto-created in DB)
+          Default admin:
+          <code>admin</code> / <code>admin123</code> (auto-created in DB).
         </div>
       </form>
 
@@ -86,13 +86,13 @@
 
         <label class="field">
           <span>How many sensors do you need?</span>
-          <div class="sensor-count-row">
-            <input id="sensor-count" type="range" min="1" max="32" value="5" />
-            <span id="sensor-count-value" class="badge-soft">5</span>
+          <div class="slider-row">
+            <input id="sensor-count" type="range" min="1" max="32" value="8" />
+            <span class="slider-value"><span id="sensor-count-value">8</span> devices</span>
           </div>
-          <div class="tiny hint">
-            We’ll pre-allocate UUIDs and attach them to your IOT_Fault workspace.
-          </div>
+          <small class="field-hint">
+            These virtual UUIDs are created on the gateway and attached to your workspace.
+          </small>
         </label>
 
         <button type="submit" class="btn btn-primary full-width">Create account</button>
@@ -113,8 +113,10 @@
   <main id="user-view" class="page hidden">
     <div class="page-inner">
       <div class="page-header">
-        <h1>IoT-Fault · My Workspace</h1>
-        <p>Your dedicated view of commissioned sensors and live signals.</p>
+        <div>
+          <h1>My sensor workspace</h1>
+          <p>Commissioned devices, live signals, and alerts – in one view.</p>
+        </div>
       </div>
 
       <div class="layout-2col">
@@ -131,34 +133,75 @@
           </div>
         </section>
 
-        <!-- RIGHT: GRAPHS & LOGS -->
+        <!-- RIGHT: TELEMETRY + LOG TABS -->
         <section class="panel">
-          <div class="panel-header">
-            <h2>Telemetry</h2>
-            <span id="selected-sensor-label" class="tag-muted">No sensor selected</span>
-          </div>
-
-          <div class="chart-grid">
-            <div class="chart-card">
-              <div class="chart-title">Temperature (°C)</div>
-              <canvas id="chart-temp" height="120"></canvas>
+          <div class="panel-header panel-header-split">
+            <div class="panel-header-left">
+              <h2>Workspace</h2>
+              <span id="selected-sensor-label" class="tag-muted">
+                No sensor selected
+              </span>
             </div>
-
-            <div class="chart-card">
-              <div class="chart-title">Vibration</div>
-              <canvas id="chart-vib" height="120"></canvas>
-            </div>
-
-            <div class="chart-card">
-              <div class="chart-title">Battery (%)</div>
-              <canvas id="chart-batt" height="120"></canvas>
+            <div class="segment-control">
+              <button class="segment active" data-user-tab="telemetry">
+                Live telemetry
+              </button>
+              <button class="segment" data-user-tab="logs">
+                Activity log
+              </button>
             </div>
           </div>
 
-          <div class="panel-header mt-24">
-            <h2>Activity log</h2>
+          <!-- TELEMETRY TAB -->
+          <div id="user-tab-telemetry" class="user-tab active">
+            <div class="telemetry-toolbar">
+              <div class="telemetry-caption">
+                Real-time signal traces for the selected device.
+              </div>
+              <div class="graph-options">
+                <label for="data-points-select">Data points</label>
+                <select id="data-points-select">
+                  <option value="10">10</option>
+                  <option value="20" selected>20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="chart-grid chart-grid-four">
+              <div class="chart-card">
+                <div class="chart-title">Temperature (°C)</div>
+                <canvas id="chart-temp" height="120"></canvas>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-title">Vibration</div>
+                <canvas id="chart-vib" height="120"></canvas>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-title">Battery (%)</div>
+                <canvas id="chart-batt" height="120"></canvas>
+              </div>
+
+              <div class="chart-card">
+                <div class="chart-title">
+                  Alert events
+                  <span class="chart-subtitle">(threshold crossings)</span>
+                </div>
+                <canvas id="chart-alert" height="120"></canvas>
+              </div>
+            </div>
           </div>
-          <div id="user-log" class="log-panel"></div>
+
+          <!-- LOG TAB -->
+          <div id="user-tab-logs" class="user-tab">
+            <div class="panel-header small mb-8">
+              <h3>Activity log</h3>
+              <span class="tag-muted">Recent actions & gateway hints</span>
+            </div>
+            <div id="user-log" class="log-panel log-panel-tall"></div>
+          </div>
         </section>
       </div>
     </div>
@@ -168,8 +211,10 @@
   <main id="admin-view" class="page hidden">
     <div class="page-inner">
       <div class="page-header">
-        <h1>IoT-Fault · Admin Console</h1>
-        <p>Approve users, inspect sensors, and watch alerts across the plant.</p>
+        <div>
+          <h1>Plant-wide admin console</h1>
+          <p>Approve users, inspect sensors, watch alerts and logs across the floor.</p>
+        </div>
       </div>
 
       <div class="admin-tabs">
@@ -188,22 +233,23 @@
               Refresh
             </button>
           </div>
-
-          <table class="table">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th style="width: 160px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="admin-users-body">
-              <tr>
-                <td colspan="4" class="text-center tiny">Loading…</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th style="width: 110px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-body">
+                <tr>
+                  <td colspan="4" class="text-center tiny">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -216,7 +262,9 @@
               Refresh
             </button>
           </div>
-          <div id="admin-sensor-list" class="sensor-list"></div>
+          <div id="admin-sensor-list" class="sensor-list empty-state">
+            Loading sensors…
+          </div>
         </div>
       </section>
 
@@ -224,22 +272,23 @@
       <section id="admin-alerts" class="admin-tab-body">
         <div class="panel">
           <div class="panel-header">
-            <h2>Alerts</h2>
-            <span class="tag-muted tiny">Alert stream from worker process.</span>
+            <h2>Live alerts</h2>
+            <span class="tag-muted">Streaming from alert_worker via sensor_gateway</span>
           </div>
-          <div id="admin-alerts-panel" class="log-panel">
-            Waiting for alert feed…
+          <div id="admin-alerts-panel" class="log-panel log-panel-tall">
+            Waiting for alerts…
           </div>
         </div>
       </section>
 
-      <!-- LOGS TAB -->
+      <!-- LOGS TAB (UI only) -->
       <section id="admin-logs" class="admin-tab-body">
         <div class="panel">
           <div class="panel-header">
-            <h2>System logs</h2>
+            <h2>Admin activity log</h2>
+            <span class="tag-muted">UI-level actions and approvals</span>
           </div>
-          <div id="admin-log" class="log-panel"></div>
+          <div id="admin-log" class="log-panel log-panel-tall"></div>
         </div>
       </section>
     </div>

@@ -1,0 +1,110 @@
+name: Build and Deploy IoT Fault Tolerant App to Azure Container Apps
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: iot-fault-rg
+  AZURE_CONTAINERAPPS_ENV: env-iot-fault
+  AZURE_LOCATION: centralindia
+  ACR_NAME: myfaulttolerantappacr
+
+  AUTH_APP_NAME: auth-service
+  GATEWAY_APP_NAME: gateway-service
+  WORKER_APP_NAME: worker-service
+  FRONTEND_APP_NAME: frontend-web
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure login (Service Principal)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Container Apps CLI extension
+        run: |
+          az extension add --name containerapp --upgrade
+
+      - name: Login to ACR
+        run: |
+          az acr login --name "$ACR_NAME"
+
+      - name: Build and push Docker images
+        run: |
+          ACR_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
+          GIT_SHA="${GITHUB_SHA}"
+
+          echo "Using ACR: $ACR_LOGIN_SERVER"
+          echo "Git SHA: $GIT_SHA"
+
+          # AUTH SERVICE
+          IMAGE_AUTH="${ACR_LOGIN_SERVER}/auth:${GIT_SHA}"
+          echo "Building AUTH image: $IMAGE_AUTH"
+          docker build -f auth_service/Dockerfile -t "$IMAGE_AUTH" .
+          docker push "$IMAGE_AUTH"
+
+          # GATEWAY SERVICE
+          IMAGE_GATEWAY="${ACR_LOGIN_SERVER}/gateway:${GIT_SHA}"
+          echo "Building GATEWAY image: $IMAGE_GATEWAY"
+          docker build -f sensor_gateway/Dockerfile -t "$IMAGE_GATEWAY" .
+          docker push "$IMAGE_GATEWAY"
+
+          # WORKER SERVICE
+          IMAGE_WORKER="${ACR_LOGIN_SERVER}/worker:${GIT_SHA}"
+          echo "Building WORKER image: $IMAGE_WORKER"
+          docker build -f alert_worker/Dockerfile -t "$IMAGE_WORKER" .
+          docker push "$IMAGE_WORKER"
+
+          # FRONTEND
+          IMAGE_FRONTEND="${ACR_LOGIN_SERVER}/frontend:${GIT_SHA}"
+          echo "Building FRONTEND image: $IMAGE_FRONTEND"
+          docker build -f Dockerfile -t "$IMAGE_FRONTEND" ./frontend
+          docker push "$IMAGE_FRONTEND"
+
+          # Export for next step
+          echo "IMAGE_AUTH=$IMAGE_AUTH" >> $GITHUB_ENV
+          echo "IMAGE_GATEWAY=$IMAGE_GATEWAY" >> $GITHUB_ENV
+          echo "IMAGE_WORKER=$IMAGE_WORKER" >> $GITHUB_ENV
+          echo "IMAGE_FRONTEND=$IMAGE_FRONTEND" >> $GITHUB_ENV
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          echo "Updating Container Apps with new images..."
+
+          az containerapp update \
+            --name "$AUTH_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$IMAGE_AUTH"
+
+          az containerapp update \
+            --name "$GATEWAY_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$IMAGE_GATEWAY"
+
+          az containerapp update \
+            --name "$WORKER_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$IMAGE_WORKER"
+
+          az containerapp update \
+            --name "$FRONTEND_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --image "$IMAGE_FRONTEND"
+
+      - name: Show frontend URL
+        run: |
+          FQDN=$(az containerapp show \
+            --name "$FRONTEND_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "=============================================="
+          echo "Frontend URL: https://$FQDN"
+          echo "=============================================="
