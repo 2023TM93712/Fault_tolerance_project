@@ -1,7 +1,7 @@
 // ----------- CONFIG ----------- //
 
-const AUTH_BASE = `http://${window.location.hostname}:9001`;
-const GW_BASE = `http://${window.location.hostname}:9002`;
+const AUTH_BASE = `http://auth-service:9001`;
+const GW_BASE = `http://gateway-service:9002`;
 
 // thresholds (you can tune)
 const TEMP_THRESHOLD = 30; // °C
