@@ -27,6 +27,7 @@ int main() {
     while (true) {
         auto alerts = db.get_pending_alerts(100);
 
+        db.exec("BEGIN;");
         for (auto &a : alerts) {
             string uuid = a.sensor_uuid;
             double t = a.temperature;
@@ -54,6 +55,7 @@ int main() {
                 }
             }
         }
+        db.exec("COMMIT;");
         this_thread::sleep_for(chrono::seconds(2));
     }
     return 0;

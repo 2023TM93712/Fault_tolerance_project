@@ -42,6 +42,7 @@ void SensorSimulator::loop() {
             }
         }
 
+        db_.exec("BEGIN;");
         for (auto &s : sensors_) {
             double t = tempD(rng);
             double vib = vibD(rng);
@@ -56,6 +57,7 @@ void SensorSimulator::loop() {
                 Logger::instance().warn("FAULT -> generating alert for " + s.uuid);
             }
         }
+        db_.exec("COMMIT;");
         std::this_thread::sleep_for(std::chrono::seconds(3));
     }
 }
